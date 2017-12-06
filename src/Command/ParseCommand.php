@@ -63,13 +63,14 @@ class ParseCommand extends Command
      */
     public function handle()
     {
-        $this->sources     = Config::get('linguo.sources');
-        $this->potPathName = Config::get('linguo.i18nPath') . '/catalog.pot';
-        $this->i18nPath    = Config::get('linguo.i18nPath');
-        $this->locales     = Config::get('linguo.locales');
 
-        $headers           = Config::get('linguo.headers');
-        $domain            = Config::get('linguo.domain');
+        $config            = Config::get('linguo');
+        $this->sources     = $config['sources'];
+        $this->i18nPath    = $config['i18nPath'];
+        $this->potPathName = $this->i18nPath . '/catalog.pot';
+        $this->locales     = $config['locales'];
+        $headers           = $config['headers'];
+        $domain            = $config['domain'];
         $translations      = null;
         $sources           = [];
         $compile           = $this->option('compile') ? true : false;
@@ -78,6 +79,59 @@ class ParseCommand extends Command
 
             throw new Exception('Locales not defined on config');
         }
+
+        if($compile){
+
+            $pot = \Gettext\Translations::fromPoFile($this->potPathName);
+            $pot->setDomain($domain);
+
+            foreach($this->locales as $locale){
+
+                //$lang = \Locale::getPrimaryLanguage($locale);
+
+                $base = $this->i18nPath . '/' . $locale . '/';
+
+                if(!is_dir($base)){
+                    mkdir($base, '0777', true);
+                }
+
+                $poFile = $base .  $domain . '.po';
+                $target = $base .  $domain . '.php';
+
+                if(!is_file($poFile)){
+                    touch($poFile);
+                }
+
+                /** @var \Gettext\Translations $po */
+                $po = \Gettext\Translations::fromPoFile($poFile);
+
+                $msg = sprintf('%s %s <info>Done!</info>', $domain, $locale);
+                $this->line($msg);
+
+                $po->setLanguage($locale);
+                $po->setDomain($domain);
+
+                foreach($headers as $k => $v){
+                    $po->setHeader($k, $v);
+                }
+
+                $po->setHeader('X-Poedit-SourceCharset', 'UTF-8');
+
+                $po->mergeWith($pot, \Gettext\Translations::MERGE_ADD | \Gettext\Translations::MERGE_REMOVE | \Gettext\Translations::MERGE_COMMENTS | \Gettext\Translations::MERGE_REFERENCES | \Gettext\Translations::MERGE_PLURAL);
+                $po->toPoFile($poFile);
+
+                // Build
+
+                $po->setDomain($domain);
+                \Gettext\Generators\PhpArray::toFile($po, $target);
+
+                $msg = sprintf('<info>Done!</info> Build translations for %s %s', $po->count(), $locale);
+                $this->line($msg);
+            }
+
+            return;
+        }
+
 
         $reader = function($root) use (&$reader) {
 
@@ -179,62 +233,8 @@ class ParseCommand extends Command
 
         $pot->toPoFile($this->potPathName);
 
-
-
-
-        if($compile){
-
-            ////
-
-            $msg = sprintf('<info>Done!</info> <comment>POT created</comment> Found %s translations', $pot->count());
-            $this->line($msg);
-
-            foreach($this->locales as $locale){
-
-                //$lang = \Locale::getPrimaryLanguage($locale);
-
-                $base = $this->i18nPath . '/' . $locale . '/';
-
-                if(!is_dir($base)){
-                    mkdir($base, '0777', true);
-                }
-
-                $poFile = $base .  $domain . '.po';
-                $target = $base .  $domain . '.php';
-
-                if(!is_file($poFile)){
-                    touch($poFile);
-                }
-
-                /** @var \Gettext\Translations $po */
-                $po = \Gettext\Translations::fromPoFile($poFile);
-
-                $msg = sprintf('%s %s <info>Done!</info>', $domain, $locale);
-                $this->line($msg);
-
-                $po->setLanguage($locale);
-                $po->setDomain($domain);
-
-                foreach($headers as $k => $v){
-                    $po->setHeader($k, $v);
-                }
-
-                $po->setHeader('X-Poedit-SourceCharset', 'UTF-8');
-
-                $po->mergeWith($pot, \Gettext\Translations::MERGE_ADD | \Gettext\Translations::MERGE_REMOVE | \Gettext\Translations::MERGE_COMMENTS | \Gettext\Translations::MERGE_REFERENCES | \Gettext\Translations::MERGE_PLURAL);
-                $po->toPoFile($poFile);
-
-                // Build
-
-                $po->setDomain($domain);
-                \Gettext\Generators\PhpArray::toFile($po, $target);
-
-                $msg = sprintf('<info>Done!</info> Build translations for %s %s', $po->count(), $locale);
-                $this->line($msg);
-            }
-        }
-
-
+        $msg = sprintf('<info>Done!</info> <comment>POT created</comment> Found %s translations', $pot->count());
+        $this->line($msg);
 
 
         return 0;
