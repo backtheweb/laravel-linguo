@@ -56,11 +56,15 @@ return [
 
 ## Parse and generate translation files
 
-Parse and build on one command
+### Parse
 
-````
-php artisian linguo:parse
-````
+
+    php artisian linguo:parse --compile
+
+
+## Compile
+
+    php artisian linguo:parse
 
 ### What does it do?
 
@@ -71,11 +75,3 @@ php artisian linguo:parse
     * Create or/update the `{local}/default.po` file.
     * Create a `{local}/default.php` file with translations defined on `{local}/default.po`
     
-## Convert Po to array
-
-````
-php artisian linguo:convert 
-php artisian linguo:convert default 
-```` 
-
-Default is the domain/file name by default, default is used.
