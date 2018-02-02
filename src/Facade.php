@@ -1,10 +1,8 @@
 <?php
 
-namespace Nevnetum\Linguo;
+namespace Bactheweb\Linguo;
 
-use Illuminate\Support\Facades\Facade;
-
-class LinguoFacade extends Facade
+class Facade extends \Illuminate\Support\Facades\Facade
 {
     /**
      * Get the registered name of the component.
