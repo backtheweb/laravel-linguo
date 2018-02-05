@@ -34,7 +34,6 @@ class ParseCommand extends Command
      *
      * @var  array
      */
-
     protected $sources = [];
     /**
      * Create a new command instance.
@@ -54,8 +53,7 @@ class ParseCommand extends Command
      */
     protected $i18nPath = null;
 
-    /** @var array  */
-    protected $locales = [];
+    
 
     /**
      * @return int
@@ -63,33 +61,33 @@ class ParseCommand extends Command
      */
     public function handle()
     {
+        $xSources = Config::get('linguo.sources');
+        $i18nPath = Config::get('linguo.i18nPath');
+        $locales  = Config::get('linguo.locales');
+        $headers  = Config::get('linguo.headers');
+        $domain   = Config::get('linguo.domain');
 
-        $config            = Config::get('linguo');
-        $this->sources     = $config['sources'];
-        $this->i18nPath    = $config['i18nPath'];
-        $this->potPathName = $this->i18nPath . '/catalog.pot';
-        $this->locales     = $config['locales'];
-        $headers           = $config['headers'];
-        $domain            = $config['domain'];
+        $this->potPathName = $i18nPath . '/catalog.pot';
+
         $translations      = null;
         $sources           = [];
         $compile           = $this->option('compile') ? true : false;
 
-        if(!$this->locales){
+        if(!$locales){
 
             throw new Exception('Locales not defined on config');
         }
 
-        if($compile){
+        //if($compile){
 
             $pot = \Gettext\Translations::fromPoFile($this->potPathName);
             $pot->setDomain($domain);
 
-            foreach($this->locales as $locale){
+            foreach($locales as $locale){
 
                 //$lang = \Locale::getPrimaryLanguage($locale);
 
-                $base = $this->i18nPath . '/' . $locale . '/';
+                $base = $i18nPath . '/' . $locale . '/';
 
                 if(!is_dir($base)){
                     mkdir($base, '0777', true);
@@ -129,8 +127,8 @@ class ParseCommand extends Command
                 $this->line($msg);
             }
 
-            return;
-        }
+            //return;
+        //}
 
 
         $reader = function($root) use (&$reader) {
@@ -166,17 +164,11 @@ class ParseCommand extends Command
 
         touch($this->potPathName);
 
-        /*
-        \Gettext\Extractors\PhpCode::$functions['gettext']      = '__';
-        \Gettext\Extractors\PhpCode::$functions['ngettext']     = 'plural';
-        */
-
-        \Gettext\Extractors\PhpCode::$functions['plural']     = 'n__';
 
         $pot = \Gettext\Translations::fromPoFile($this->potPathName);
         $pot->setDomain($domain);
 
-        foreach($this->sources as $path) {
+        foreach($xSources as $path) {
 
             $found    = $reader($path);
             $sources  = array_merge($sources, $found);
@@ -193,10 +185,7 @@ class ParseCommand extends Command
 
                 case preg_match('/.blade.php/', $file):
 
-                    $string = str_replace('{{', '<?php ', $string);
-                    $string = str_replace('}}', ' ?>',    $string);
-
-                    \Gettext\Extractors\PhpCode::fromString($string, $pot, $file);
+                    \Gettext\Extractors\Blade::fromString($string, $pot, $file);
 
                     $type = 'blade';
 
@@ -204,10 +193,9 @@ class ParseCommand extends Command
 
                 case preg_match('/.twig/', $file):
 
-                    $string = str_replace('{{', '<?php ', $string);
-                    $string = str_replace('}}', ' ?>',    $string);
 
-                    \Gettext\Extractors\PhpCode::fromString($string, $pot, $file);
+                    \Backtheweb\Linguo\Extractors\Twig::fromString($string, $pot, $file);
+
                     $type = 'twig';
 
                     break;
@@ -226,14 +214,14 @@ class ParseCommand extends Command
             }
 
             $count = $pot->count() - $count;
-            $msg   = sprintf('<comment>%s</comment> %s <info>%s</info>', $file, $count > 0 ? "[$count]" : "<error>[$count]</error>", strtoupper($type));
+            $msg   = sprintf('<info>%s</info> <comment>%s</comment> %s ', strtoupper($type), $file, $count > 0 ? "[$count]" : "");
 
             $this->line($msg);
         }
 
         $pot->toPoFile($this->potPathName);
 
-        $msg = sprintf('<info>Done!</info> <comment>POT created</comment> Found %s translations', $pot->count());
+        $msg = sprintf('<info>Done!</info> <comment>POT created</comment> Found %s unique translation keys', $pot->count());
         $this->line($msg);
 
 

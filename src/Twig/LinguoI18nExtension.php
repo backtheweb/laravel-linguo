@@ -4,14 +4,17 @@ namespace Backtheweb\Linguo\Twig;
 use Twig_Extension;
 use Twig_SimpleFilter;
 use Twig_SimpleFunction;
+use NumberFormatter;
+
 //use Illuminate\Translation\Translator;
 
 use Backtheweb\Linguo\Translator;
-use Backtheweb\Linguo\LoaderInterface;
-use Backtheweb\Linguo\FileLoader;
+
+
 
 class LinguoI18nExtension extends Twig_Extension
 {
+
     /**
      * @var \Backtheweb\Linguo\Translator
      */
@@ -32,27 +35,29 @@ class LinguoI18nExtension extends Twig_Extension
         return 'twigLinguoTranslator';
     }
 
-
     public function getFilters()
     {
         return array(
-            new \Twig_SimpleFilter('numberFormat',   [$this, 'number' ],  ['is_safe' => ['html']]),
-            new \Twig_SimpleFilter('currency',       [$this, 'currency'], ['is_safe' => ['html']]),
+            new Twig_SimpleFilter('numberFormat',   [$this, 'number' ],  ['is_safe' => ['html']]),
+            new Twig_SimpleFilter('currency',       [$this, 'currency'], ['is_safe' => ['html']]),
         );
     }
 
     public function getFunctions(){
         return array(
-            new \Twig_SimpleFunction('__',  [$this, 'trans'],    ['is_safe' => ['html']]),
-            new \Twig_SimpleFunction('_x',  [$this, 'trans'],    ['is_safe' => ['html']]),
-            new \Twig_SimpleFunction('n__', [$this, 'plural'],   ['is_safe' => ['html']]),
+            new Twig_SimpleFunction('__',          [$this, 'trans'],    ['is_safe' => ['html']]),
+            new Twig_SimpleFunction('_x',          [$this, 'trans'],    ['is_safe' => ['html']]),
+            new Twig_SimpleFunction('n__',         [$this, 'plural'],   ['is_safe' => ['html']]),
+            //new Twig_SimpleFilter('trans', 'gettext'),
+            //new Twig_SimpleFunction('trans',        [$this, 'trans'],    ['is_safe' => ['html']]),
+            //new Twig_SimpleFunction('trans_choice', [$this, 'plural'],   ['is_safe' => ['html']]),
         );
     }
 
     public function number($value, $locale = null)
     {
         $locale = $locale === null ? \App::getLocale() : $locale;
-        $a      = new \NumberFormatter($locale, \NumberFormatter::DECIMAL);
+        $a      = new NumberFormatter($locale, NumberFormatter::DECIMAL);
 
         return $a->format($value);
     }
@@ -65,12 +70,12 @@ class LinguoI18nExtension extends Twig_Extension
 
         //$locale = $locale ? $locale : \Locale::getDefault();
         $locale = $locale === null ? \App::getLocale() : $locale;
-        $fmt    = new \NumberFormatter($locale, \NumberFormatter::CURRENCY );
+        $fmt    = new NumberFormatter($locale, NumberFormatter::CURRENCY );
 
-        $fmt->setTextAttribute(\NumberFormatter::CURRENCY_CODE, $currency);
+        $fmt->setTextAttribute(NumberFormatter::CURRENCY_CODE, $currency);
 
         if($round){
-            $fmt->setAttribute(\NumberFormatter::FRACTION_DIGITS, 0);
+            $fmt->setAttribute(NumberFormatter::FRACTION_DIGITS, 0);
         }
 
         return $fmt->formatCurrency($value, $currency);
