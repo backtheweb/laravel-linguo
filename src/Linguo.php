@@ -90,7 +90,7 @@ class Linguo implements TranslatorInterface
         $string = $this->getTranslator($locale)->dgettext($domain, $msgid);
 
 
-        if($msgid == $string){
+        if($msgid === $string && $locale !== $this->fallback){
             $string = $this->getTranslator($this->fallback)->dgettext($domain, $msgid);
         }
 
