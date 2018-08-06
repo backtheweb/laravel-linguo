@@ -57,13 +57,18 @@ class Linguo implements TranslatorInterface
 
     public function getTranslator($locale)
     {
-
         if(!isset($this->translators[$locale])){
 
             $this->translators[$locale] = new \Gettext\Translator();
 
             $this->loadDefaultDomain($locale);
             $this->loadDomains($locale);
+
+            if($locale != $this->fallback){
+
+                $this->loadDefaultDomain($this->fallback);
+                $this->loadDomains($this->fallback);
+            }
         }
 
         return $this->translators[$locale];
@@ -83,6 +88,12 @@ class Linguo implements TranslatorInterface
         }
 
         $string = $this->getTranslator($locale)->dgettext($domain, $msgid);
+
+
+        if($msgid == $string){
+            $string = $this->getTranslator($this->fallback)->dgettext($domain, $msgid);
+        }
+
         $string = strtr($string, $parameters);
 
         return $string;

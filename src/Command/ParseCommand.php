@@ -53,7 +53,7 @@ class ParseCommand extends Command
      */
     protected $i18nPath = null;
 
-    
+
 
     /**
      * @return int
@@ -77,15 +77,50 @@ class ParseCommand extends Command
 
             throw new Exception('Locales not defined on config');
         }
-
-        //if($compile){
+        /*
+        if($compile){
 
             $pot = \Gettext\Translations::fromPoFile($this->potPathName);
             $pot->setDomain($domain);
 
             foreach($locales as $locale){
 
-                //$lang = \Locale::getPrimaryLanguage($locale);
+                $base = $i18nPath . '/' . $locale . '/';
+
+                if(!is_dir($base)){
+                    mkdir($base, '0777', true);
+                }
+
+                $poFile = $base .  $domain . '.po';
+                $target = $base .  $domain . '.php';
+
+                if(!is_file($poFile)){
+                    die('file not exist');
+                }
+
+
+                $po = \Gettext\Translations::fromPoFile($poFile);
+
+                $msg = sprintf('%s %s <info>Done!</info>', $domain, $locale);
+                $this->line($msg);
+
+                \Gettext\Generators\PhpArray::toFile($po, $target);
+
+                $msg = sprintf('<info>Done!</info> Build translations for %s %s', $po->count(), $locale);
+                $this->line($msg);
+            }
+
+            return;
+        }
+        */
+
+
+        if($compile){
+
+            $pot = \Gettext\Translations::fromPoFile($this->potPathName);
+            $pot->setDomain($domain);
+
+            foreach($locales as $locale){
 
                 $base = $i18nPath . '/' . $locale . '/';
 
@@ -115,7 +150,15 @@ class ParseCommand extends Command
 
                 $po->setHeader('X-Poedit-SourceCharset', 'UTF-8');
 
-                $po->mergeWith($pot, \Gettext\Translations::MERGE_ADD | \Gettext\Translations::MERGE_REMOVE | \Gettext\Translations::MERGE_COMMENTS | \Gettext\Translations::MERGE_REFERENCES | \Gettext\Translations::MERGE_PLURAL);
+                $po->mergeWith($pot,
+
+                    \Gettext\Translations::MERGE_ADD |
+                    \Gettext\Translations::MERGE_REMOVE |
+                    \Gettext\Translations::MERGE_COMMENTS |
+                    \Gettext\Translations::MERGE_REFERENCES |
+                    \Gettext\Translations::MERGE_PLURAL
+                );
+
                 $po->toPoFile($poFile);
 
                 // Build
@@ -127,8 +170,9 @@ class ParseCommand extends Command
                 $this->line($msg);
             }
 
-            //return;
-        //}
+            return;
+        }
+
 
 
         $reader = function($root) use (&$reader) {
@@ -164,7 +208,6 @@ class ParseCommand extends Command
 
         touch($this->potPathName);
 
-
         $pot = \Gettext\Translations::fromPoFile($this->potPathName);
         $pot->setDomain($domain);
 
@@ -192,7 +235,6 @@ class ParseCommand extends Command
                     break;
 
                 case preg_match('/.twig/', $file):
-
 
                     \Backtheweb\Linguo\Extractors\Twig::fromString($string, $pot, $file);
 
